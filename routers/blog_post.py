@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Query, Body
-from typing import Optional
+from fastapi import APIRouter, Query, Path, Body
+from typing import Optional, List, Dict
 from pydantic import BaseModel
 
 router = APIRouter(
@@ -7,11 +7,18 @@ router = APIRouter(
     tags=['blog']
 )
 
+class Image(BaseModel):
+    url: str
+    alias: str
+
 class BlogModel(BaseModel):
     title: str
     content: str
     no_of_comments: int
     published: Optional[bool]
+    tags: List[str] = []
+    metadata: Dict[str,str] = {'key', 'value'}
+    image: Optional[Image] = None
 
 @router.post('/new/{id}')
 def create_blog(blog: BlogModel, id = int, version: int= 1):
@@ -22,26 +29,31 @@ def create_blog(blog: BlogModel, id = int, version: int= 1):
         }
 
 
-@router.post('/new/{id}/comment')      
+@router.post('/new/{id}/comment/{comment_id}')      
 def create_comment(blog: BlogModel,
                     id:int, 
-                    comment_id:int= Query(None,
-                    title= 'Id of the comment',
-                    description='Some decription for comment_id',
-                    alias='commentId',
-                    deprecated= True
-                    ),
+                    comment_title:int= Query(None,
+                                          title= 'Title of the comment',
+                                          description='Some decription for comment_Title',
+                                          alias='commentTitle',
+                                          deprecated= True
+                                          ),
                     content: str= Body(...,
                                        min_length=10,
-                                       max_length=20
-                                       )
+                                       max_length=20,
+                                       regex='^[a-z/s]*$'
+                                       ),
+                    v: Optional [List[str]] = Query(['1.0','1.1','1.2']),
+                    comment_id: int= Path(..., gt=5, le=10)                  
   
                     ):
     return{
         'blog': blog,
         'id': id,
-        'comment_id': comment_id,
-        'content': content
+        'comment_title': comment_title,
+        'content': content,
+        'version':v,
+        'comment_id': comment_id
     }
     
     
